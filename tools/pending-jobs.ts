@@ -1,7 +1,8 @@
 import { parseJobs, stardanceFetch } from "../utils"
-export const jobsTool = {
-    name: "failed-jobs",
-    desc: "Lists recently failed background jobs (requires admin access)",
+
+export const pendingJobsTool = {
+    name: "pending-jobs",
+    desc: "Lists all pending jobs (requires admin access)",
     inputSchema: {
         jobClassName: {
             type: "string",
@@ -24,7 +25,7 @@ export const jobsTool = {
         if (args.queueName) {
             queryParams.append("filter[queue_name]", args.queueName)
         }
-        const baseUrl = "https://stardance.hackclub.com/admin/jobs/applications/battlemage/failed/jobs"
+        const baseUrl = "https://stardance.hackclub.com/admin/jobs/applications/battlemage/pending/jobs"
         const url = queryParams.size > 0 ? `${baseUrl}?${queryParams}` : baseUrl
         const text = await stardanceFetch(url, {
             headers: {

@@ -1,5 +1,5 @@
 import * as cheerio from "cheerio"
-const USER_AGENT = `stardance-mcp/1.0`;
+const USER_AGENT = ` ${} stardance-mcp/1.0`;
 
 /**
  * Wrapper around fetch that applies a static User-Agent header.
@@ -79,4 +79,40 @@ export function parseJobs(text: string) {
       return { id, jClass, gid, enqAgo, err, failedAgo, discardAction, retryAction }
     })
   return jobs
+}
+
+export function parseJobPage(text: string) {
+  const $ = cheerio.load(text)
+  const [errorInfo, rawData] = $("pre").toArray().map((el) => $(el).text().trim())
+  const errorName = $(".level-left").text()
+
+  const details: Record<string, string> = {}
+  const timestamps: Record<string, { at: string; ago: string }> = {}
+
+  $("table.table tr").each((_, row) => {
+    const label = $(row).find("th").text().trim()
+    if (!label) return
+
+    const cell = $(row).find("td")
+    const span = cell.find("span[title]").first()
+
+    if (span.length) {
+      timestamps[label] = { at: span.attr("title") ?? "", ago: span.text().trim() }
+      return
+    }
+
+    const link = cell.find("a").first()
+    details[label] = (link.length ? link.text() : cell.text()).trim()
+  })
+
+  return {
+    errorName,
+    errorInfo,
+    rawData,
+    arguments: details["Arguments"] ?? "",
+    jobId: details["Job id"] ?? "",
+    queue: details["Queue"] ?? "",
+    enqueued: timestamps["Enqueued"] ?? null,
+    failed: timestamps["Failed"] ?? null,
+  }
 }

@@ -11,7 +11,7 @@ import { tools } from "./tools/index.ts";
 const SESSION_COOKIE = process.env.STARDANCE_SESSION;
 
 if (!SESSION_COOKIE) {
-  console.error(
+  console.warn(
     [
       "Missing required auth: Stardance session cookie",
       "Your `_stardance_session_v3` cookie to be used to auth requests",
@@ -20,7 +20,6 @@ if (!SESSION_COOKIE) {
       '  "env": { "STARDANCE_SESSION": "<your _stardance_session_v3 cookie>" }',
     ].join("\n")
   );
-  process.exit(1);
 }
 
 const server = new McpServer({ name: "stardance-better", version: "1.0.0" });
@@ -33,11 +32,25 @@ for (const tool of tools) {
       inputSchema: tool.inputSchema ?? {},
       annotations: tool.annotations,
     },
-    async (args) => ({
-      content: [
-        { type: "text", text: JSON.stringify(await tool.execute(args, SESSION_COOKIE), null, 2) },
-      ],
-    })
+    async (args) => {
+      if (!SESSION_COOKIE) {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text",
+              text: "Missing required auth: STARDANCE_SESSION env var is not set. Set your `_stardance_session_v3` cookie in your MCP client config.",
+            },
+          ],
+        };
+      }
+
+      return {
+        content: [
+          { type: "text", text: JSON.stringify(await tool.execute(args, SESSION_COOKIE), null, 2) },
+        ],
+      };
+    }
   );
 }
 

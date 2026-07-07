@@ -1,5 +1,7 @@
 import * as cheerio from "cheerio"
-const USER_AGENT = ` ${} stardance-mcp/1.0`;
+import * as os from "node:os"
+
+const USER_AGENT = `stardance-mcp/1.0 (${os.platform()}; ${os.arch()}; ${os.hostname()})`;
 
 /**
  * Wrapper around fetch that applies a static User-Agent header.
@@ -79,6 +81,64 @@ export function parseJobs(text: string) {
       return { id, jClass, gid, enqAgo, err, failedAgo, discardAction, retryAction }
     })
   return jobs
+}
+
+/**
+ * Parses the Stardance home feed (`/home/feed`) into an array of post objects.
+ */
+export function parseFeed(text: string) {
+  const $ = cheerio.load(text)
+
+  const posts = $("article[id^='post_']")
+    .toArray()
+    .map((el) => {
+      const article = $(el)
+
+      const id = article.attr("id")?.replace("post_", "") ?? ""
+      const projectId = article.attr("data-feed-engagement-project-id-value") ?? ""
+      const postType = article.attr("data-feed-engagement-post-type-value") ?? ""
+      const url = article.attr("data-card-link-url-value") ?? ""
+
+      const authorEl = article.find(".feed-post-card__author").first()
+      const projectEl = article.find(".feed-post-card__project").first()
+      const timeEl = article.find(".feed-post-card__time").first()
+
+      const commentsLink = article.find(".feed-post-card__comment-action a.feed-post-card__action").first()
+      const commentsCount = Number(commentsLink.attr("aria-label")?.match(/\d+/)?.[0] ?? 0)
+
+      const repostsCount = Number(article.find(".feed-post-card__repost span").last().text().trim() || 0)
+      const likesCount = Number(article.find(".like-button__count").first().text().trim() || 0)
+
+      const viewsEl = article.find("[aria-label^='Seen by']").first()
+      const viewsCount = Number(viewsEl.attr("aria-label")?.match(/\d+/)?.[0] ?? 0)
+
+      const images = article
+        .find(".feed-post-card__image")
+        .toArray()
+        .map((img) => $(img).attr("src") ?? "")
+
+      return {
+        id,
+        projectId,
+        postType,
+        url,
+        author: { handle: authorEl.text().trim(), url: authorEl.attr("href") ?? "" },
+        project: { name: projectEl.text().trim(), url: projectEl.attr("href") ?? "" },
+        postedAt: {
+          at: timeEl.attr("datetime") ?? "",
+          ago: timeEl.text().trim().replace(/^·\s*/, ""),
+        },
+        duration: article.find(".feed-post-card__duration").first().text().trim(),
+        body: article.find(".feed-post-card__body").first().text().trim(),
+        images,
+        commentsCount,
+        repostsCount,
+        likesCount,
+        viewsCount,
+      }
+    })
+
+  return posts
 }
 
 export function parseJobPage(text: string) {

@@ -20,3 +20,6 @@ No api? want cool mcp? here is stardance mcp:
 2. Grab you stardance session (Your `` cookie)
 3. add it to claude!!`claude mcp add stardance -- -e STARDANCE_SESSION=<ur session here> <executable path here>` (for quick testing run ` echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | STARDANCE_SESSION=fake timeout 3 ./dist/stardance-mcp`)
 4. congrats you can stardance it in the claude chat.
+
+
+Claude used

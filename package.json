@@ -6,6 +6,7 @@
   "scripts": {
     "build": "bun build ./index.ts --outdir dist --target node",
     "build:exe": "bun build ./index.ts --compile --outfile dist/stardance-mcp",
+    "extract-routes": "bun run scripts/extract-routes.ts",
     "test": "bunx @modelcontextprotocol/inspector bun index.ts"
   },
   "devDependencies": {
